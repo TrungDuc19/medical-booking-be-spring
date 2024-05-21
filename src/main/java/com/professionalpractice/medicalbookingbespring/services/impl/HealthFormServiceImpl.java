@@ -1,8 +1,23 @@
 package com.professionalpractice.medicalbookingbespring.services.impl;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
+import com.professionalpractice.medicalbookingbespring.entities.Doctor;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +39,7 @@ import com.professionalpractice.medicalbookingbespring.services.HealthFormServic
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +52,8 @@ public class HealthFormServiceImpl implements HealthFormService {
     private final UserRepository userRepository;
 
     private final ShiftRepository shiftRepository;
+
+    private final ServletContext servletContext;
 
     @Override
     public HealthFormDTO createHealthForm(HealthFormRequest healthFormRequest) {
@@ -152,5 +170,143 @@ public class HealthFormServiceImpl implements HealthFormService {
 
         Page<HealthForm> healthFormPage = healthFormRepository.findAll(specification, pageRequest);
         return healthFormPage.map(healthForm -> modelMapper.map(healthForm, HealthFormDTO.class));
+    }
+
+    @Override
+    public void exportHealthForm(HttpServletResponse response) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+
+        Sheet sheet = workbook.createSheet("Phiếu khám bệnh");
+
+        Row headerRow = sheet.createRow(0);
+
+        CellStyle style = workbook.createCellStyle();
+        XSSFFont font = (XSSFFont) workbook.createFont();
+        font.setBold(true);
+        font.setFontHeight(16);
+        style.setFont(font);
+
+        CellStyle styleRow = workbook.createCellStyle();
+        XSSFFont fontRow = (XSSFFont) workbook.createFont();
+        fontRow.setFontHeight(14);
+        styleRow.setFont(fontRow);
+
+        createCell(headerRow, 0, "STT", style);
+        sheet.autoSizeColumn(0);
+        createCell(headerRow, 1, "Họ và tên", style);
+        sheet.autoSizeColumn(1);
+        createCell(headerRow, 2, "Tên bệnh nhân", style);
+        sheet.autoSizeColumn(2);
+        createCell(headerRow, 3, "Email", style);
+        sheet.autoSizeColumn(3);
+        createCell(headerRow, 4, "Sđt", style);
+        sheet.autoSizeColumn(4);
+        createCell(headerRow, 5, "Địa chỉ", style);
+        sheet.autoSizeColumn(5);
+        createCell(headerRow, 6, "Ngày khám", style);
+        sheet.autoSizeColumn(6);
+        createCell(headerRow, 7, "Giờ khám", style);
+        sheet.autoSizeColumn(7);
+        createCell(headerRow, 8, "Ví trị khám", style);
+        sheet.autoSizeColumn(8);
+        createCell(headerRow, 9, "Bác sĩ", style);
+        sheet.autoSizeColumn(9);
+        createCell(headerRow, 10, "Lý do", style);
+        sheet.autoSizeColumn(10);
+        createCell(headerRow, 11, "Tình trạng", style);
+        sheet.autoSizeColumn(11);
+        createCell(headerRow, 12, "Thứ tự khám", style);
+        sheet.autoSizeColumn(12);
+
+
+        List<HealthForm> healthForms = this.healthFormRepository.findAll();
+        int rowCount =1;
+        for (HealthForm healthForm : healthForms){
+            Row row = sheet.createRow(rowCount++);
+            int columnCount = 0;
+            createCell(row, columnCount++, healthForm.getId(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getUser().getFullName(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getNamePatient(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getEmail(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getPhoneNumber(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getAddress(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getShift().getDate().toString(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getShift().getTime(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getShift().getPlace(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getShift().getDoctor().getName(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getReason(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getStatus(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+            createCell(row, columnCount++, healthForm.getAcceptedNumber(), styleRow);
+            sheet.autoSizeColumn(columnCount);
+        }
+
+
+        String fileName = saveWorkbookToFile(workbook);
+
+
+
+    }
+
+    @Override
+    public void createCell(Row row, int columnCount, Object value, CellStyle style) {
+        Cell cell = row.createCell(columnCount);
+        if (value instanceof Long) {
+            cell.setCellValue((Long) value);
+        } else if (value instanceof Integer) {
+            cell.setCellValue((Integer) value);
+        } else if (value instanceof Boolean) {
+            cell.setCellValue((Boolean) value);
+        } else if (value instanceof LocalDateTime) {
+            cell.setCellValue((LocalDateTime) value);
+        } else {
+            cell.setCellValue((String) value);
+        }
+    }
+
+    private String saveWorkbookToFile(Workbook workbook) {
+        // Tạo ByteArrayOutputStream để lưu dữ liệu workbook
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            workbook.write(baos);
+            workbook.close();
+
+            // Tạo ByteArrayInputStream từ ByteArrayOutputStream
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(baos.toByteArray())) {
+                // Tạo tên file duy nhất
+                String filename = "health-form.xlsx"; // hoặc tên khác nếu cần
+                String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
+
+                // Tạo đối tượng Path cho thư mục uploads
+                Path uploadDir = Paths.get("uploads");
+
+                // Kiểm tra và tạo thư mục uploads nếu chưa tồn tại
+                if (!Files.exists(uploadDir)) {
+                    Files.createDirectories(uploadDir);
+                }
+
+                // Tạo đường dẫn đích để lưu file
+                Path destination = Paths.get(uploadDir.toString(), uniqueFilename);
+
+                // Sao chép nội dung workbook vào file đích
+                Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING);
+
+                // Trả về tên file duy nhất
+                return uniqueFilename;
+            }
+        } catch (IOException e) {
+            System.err.println("Lỗi khi lưu file: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lưu file", e);
+        }
     }
 }

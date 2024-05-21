@@ -30,39 +30,27 @@ public class HealthForm {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "user_id")
     User user;
-
     @Column(name = "name_patient", nullable = false)
     String namePatient;
-
     String email;
-
     @Column(name = "phone_number", nullable = false)
     String phoneNumber;
-
     String address;
-
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "shift_id")
     Shift shift;
-
     @Column(name = "reason", nullable = false)
     String reason;
-
     @Column(name = "cccd", nullable = false)
     String cccd;
-
     @Column(name = "bhyt")
     String bhyt;
-
     @Column(name = "denied_reason")
     String deniedReason;
-
     Integer status;
-
     @Column(name = "accepted_number")
     Integer acceptedNumber;
 }
