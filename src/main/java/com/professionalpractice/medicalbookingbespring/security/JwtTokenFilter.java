@@ -73,7 +73,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Pair.of("/api/v1/auth/register", "POST"),
                 Pair.of("/api/v1/doctors", "GET"),
                 Pair.of("/api/v1/departments", "GET"),
-                Pair.of("/api/v1/shifts", "GET"));
+                Pair.of("/api/v1/shifts", "GET"),
+                Pair.of("/api/v1/health-forms/export/excel", "GET")
+            );
 
         for (Pair<String, String> bypassToken : bypassTokens) {
             if (request.getServletPath().contains(bypassToken.getFirst()) &&

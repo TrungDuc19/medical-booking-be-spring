@@ -3,6 +3,7 @@ package com.professionalpractice.medicalbookingbespring.controllers;
 import java.io.IOException;
 import java.util.List;
 
+import com.professionalpractice.medicalbookingbespring.utils.RestData;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -132,24 +133,14 @@ public class HealthFormController {
     }
 
     @GetMapping("/health-forms/export/excel")
-    public ResponseEntity<?> exportHealthForm(HttpServletResponse response) {
-        try {
-            healthFormService.exportHealthForm(response);
-            return ResponseEntity.ok("Export Successful");
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().body("Export Failed");
-        }
+    public ResponseEntity<Void> exportHealthForm(HttpServletResponse response) throws IOException{
+        response.setContentType("application/octet-stream");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment;filename=DsDonKhamBenh.xls";
+        response.setHeader(headerKey, headerValue);
+        healthFormService.exportHealthForm(response);
 
-//        response.setContentType("application/octet-stream");
-//        DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
-//        String currentDateTime = dateFormatter.format(new Date());
-//
-//        String headerKey = "Content-Disposition";
-//        String headerValue = "attachment; filename=healthforms_" + currentDateTime + ".xlsx";
-//        response.setHeader(headerKey, headerValue);
-//
-//        this.exportExcelService.exportHealthForm(response);
-//        return ResponseEntity.ok("Export Successful");
+        return ResponseEntity.ok().build();
     }
 
 }

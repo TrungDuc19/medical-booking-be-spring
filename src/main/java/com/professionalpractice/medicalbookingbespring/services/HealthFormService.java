@@ -32,5 +32,5 @@ public interface HealthFormService {
     Page<HealthFormDTO> queryHealthForms(HealthFormRequest healthFormRequest, PageRequest pageRequest);
 
     void exportHealthForm(HttpServletResponse response) throws IOException;
-    void createCell(Row row, int columnCount, Object value, CellStyle style);
+
 }
